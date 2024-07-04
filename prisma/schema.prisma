@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// name -> reference [one to many]
+// name -> name [many to many]
+// instagram post comment Array[] -> many comments (ref)
+model User {
+  id           Int    @id @default(autoincrement())
+  name         String
+  age          Int
+  email        String @unique
+  role         Role   @default(BASIC)
+  preferences  Json?
+  blob         Bytes?
+  writtenPost  Post[] @relation("writtenPost")
+  favoritePost Post[] @relation("favouritePost")
+
+  userPreference   UserPreference? @relation(fields: [userPreferenceId], references: [id])
+  userPreferenceId String?         @unique
+
+  @@unique([age, name])
+  @@index([email])
+}
+
+// float for represent general form of decimal values  eg 123.21 where as Decimal used to represent the accurate and wide range of decimal values eg 123.1233445343
+
+model Post {
+  id             String     @id @default(uuid())
+  title          String
+  averageRating  Float
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  author         User       @relation("writtenPost", fields: [userId], references: [id])
+  userId         Int
+  favouritedBy   User?      @relation("favouritePost", fields: [favouritedById], references: [id])
+  favouritedById Int?
+  categories     Category[]
+
+  // @@id([title, userId])
+}
+
+model Category {
+  id    String @id @default(uuid())
+  name  String @unique
+  posts Post[]
+}
+
+model UserPreference {
+  id           String  @id @default(uuid())
+  emailUpdates Boolean
+  User         User?
+}
+
+enum Role {
+  BASIC
+  ADMIN
+}
